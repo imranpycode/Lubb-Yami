@@ -11,10 +11,11 @@ warnings.filterwarnings("ignore")
 app = Flask(__name__)
 CORS(app)
 
-# ── Load models ────────────────────────────────────────────────────────────
+# ── Globals ────────────────────────────────────────────────────────────
 LR_MODEL_PATH = os.path.join(os.path.dirname(__file__), "lr_pipeline.pkl")
 SVM_MODEL_PATH = os.path.join(os.path.dirname(__file__), "svm_pipeline.pkl")
 LUT_PATH = os.path.join(os.path.dirname(__file__), "percentile_lut.json")
+CSV_PATH = os.path.join(os.path.dirname(__file__), "framingham.csv")
 
 imputer_med = None
 qt          = None
@@ -23,6 +24,81 @@ lr_model    = None
 svm_model   = None
 PERCENTILE_LUT = None
 
+# ── Feature definitions ─────────────────────────────────────────────────────
+FEATURE_NAMES = [
+    "male", "age", "cigsPerDay", "BPMeds", "prevalentHyp",
+    "diabetes", "totChol", "sysBP", "diaBP", "BMI", "heartRate", "glucose"
+]
+
+def train_and_save_fallback():
+    """Fallback function to retrain models if unpickling fails due to version mismatches."""
+    global imputer_med, qt, scalar, lr_model, svm_model, PERCENTILE_LUT
+    print("[INFO] Retraining models from framingham.csv...")
+    try:
+        import pandas as pd
+        from sklearn.pipeline import Pipeline
+        from sklearn.impute import SimpleImputer
+        from sklearn.preprocessing import QuantileTransformer, StandardScaler
+        from sklearn.svm import SVC
+        from sklearn.linear_model import LogisticRegression
+
+        df = pd.read_csv(CSV_PATH)
+        target = "TenYearCHD"
+        df = df.dropna(subset=[target])
+        X = df[FEATURE_NAMES]
+        y = df[target]
+
+        # Fit LR
+        lr_pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('qt', QuantileTransformer(output_distribution='normal', n_quantiles=1000, random_state=42)),
+            ('scalar', StandardScaler()),
+            ('model', LogisticRegression(max_iter=1000, random_state=42))
+        ])
+        lr_pipeline.fit(X, y)
+
+        # Fit SVM
+        svm_pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('qt', QuantileTransformer(output_distribution='normal', n_quantiles=1000, random_state=42)),
+            ('scalar', StandardScaler()),
+            ('model', SVC(C=0.1, gamma='scale', kernel='rbf', probability=True, random_state=42))
+        ])
+        svm_pipeline.fit(X, y)
+
+        # Compute averaged probabilities for LUT
+        lr_probs = lr_pipeline.predict_proba(X)[:, 1]
+        svm_probs = svm_pipeline.predict_proba(X)[:, 1]
+        ensemble_probs = (lr_probs + svm_probs) / 2.0
+        sorted_probs = np.sort(ensemble_probs).tolist()
+
+        if len(sorted_probs) > 1000:
+            indices = np.linspace(0, len(sorted_probs)-1, 1000).astype(int)
+            sorted_probs = [sorted_probs[i] for i in indices]
+
+        # Extract steps
+        imputer_med = lr_pipeline.named_steps["imputer"].statistics_
+        qt          = lr_pipeline.named_steps["qt"]
+        scalar      = lr_pipeline.named_steps["scalar"]
+        lr_model    = lr_pipeline.named_steps["model"]
+        svm_model   = svm_pipeline.named_steps["model"]
+        PERCENTILE_LUT = sorted_probs
+
+        # Save to disk to avoid retraining next time if server stays warm
+        with open(LR_MODEL_PATH, 'wb') as f:
+            pickle.dump(lr_pipeline, f)
+        with open(SVM_MODEL_PATH, 'wb') as f:
+            pickle.dump(svm_pipeline, f)
+        with open(LUT_PATH, 'w') as f:
+            json.dump(sorted_probs, f)
+
+        print("[OK] Retraining complete. Loaded fresh models successfully.")
+    except Exception as e:
+        import traceback
+        print(f"[ERR] Fallback training failed: {e}")
+        print(traceback.format_exc())
+
+# Load models
 try:
     with open(LR_MODEL_PATH, "rb") as f:
         lr_pipeline = pickle.load(f)
@@ -33,37 +109,23 @@ try:
     with open(LUT_PATH, "r") as f:
         PERCENTILE_LUT = json.load(f)
 
-    # Both models have identical preprocessing steps since trained on same data
     imputer_med = lr_pipeline.named_steps["imputer"].statistics_
     qt          = lr_pipeline.named_steps["qt"]
     scalar      = lr_pipeline.named_steps["scalar"]
-    
     lr_model    = lr_pipeline.named_steps["model"]
     svm_model   = svm_pipeline.named_steps["model"]
 
-    print(f"[OK]  Dual Models loaded successfully (LR + SVM).")
-    print(f"[OK]  Imputer medians: {imputer_med}")
+    print(f"[OK] Dual Models loaded successfully (LR + SVM).")
 
 except Exception as e:
-    import traceback
-    print(f"[ERR] Failed to load models: {e}")
-    print(traceback.format_exc())
-
-# ── Feature definitions ─────────────────────────────────────────────────────
-FEATURE_NAMES = [
-    "male", "age", "cigsPerDay", "BPMeds", "prevalentHyp",
-    "diabetes", "totChol", "sysBP", "diaBP", "BMI", "heartRate", "glucose"
-]
+    print(f"[WARN] Pickle load failed: {e}. Attempting auto-retrain...")
+    train_and_save_fallback()
 
 def model_ready() -> bool:
     return all(x is not None for x in [imputer_med, qt, scalar, lr_model, svm_model, PERCENTILE_LUT])
 
 # ── Pipeline execution ───────────────────────────────────────────────────────
 def apply_ensemble_pipeline(X: np.ndarray):
-    """
-    Manually apply preprocessing and then average LR and SVM probabilities.
-    Returns (ensemble_pred, ensemble_proba_class1, ensemble_proba_class1).
-    """
     X_imp = X.copy().astype(float)
     for col_idx, med in enumerate(imputer_med):
         X_imp[np.isnan(X_imp[:, col_idx]), col_idx] = med
@@ -71,23 +133,17 @@ def apply_ensemble_pipeline(X: np.ndarray):
     X_qt = qt.transform(X_imp)
     X_sc = scalar.transform(X_qt)
 
-    # Get probabilities for class 1 (CHD)
     lr_proba = lr_model.predict_proba(X_sc)[:, 1]
     svm_proba = svm_model.predict_proba(X_sc)[:, 1]
 
-    # Ensemble logic: average the probabilities
     ensemble_proba = (lr_proba + svm_proba) / 2.0
-    
-    # Binary prediction based on 0.5 threshold
     ensemble_preds = (ensemble_proba >= 0.5).astype(int)
 
     return ensemble_preds, ensemble_proba
 
 def score_to_percentile(prob: float, lut: list) -> float:
-    """Map an ensemble probability to a percentile using the LUT."""
     if not lut:
         return 0.0
-
     if prob <= lut[0]:   return 0.0
     if prob >= lut[-1]:  return 100.0
     for i in range(len(lut) - 1):
@@ -111,7 +167,7 @@ def build_result(pred, proba, lut) -> dict:
         "prediction": int(pred),
         "probability_chd": float(proba),
         "probability_no_chd": float(1.0 - proba),
-        "decision_score": float(proba), # Send proba as decision_score for frontend
+        "decision_score": float(proba),
         "percentile": float(pct),
         "risk_band": band,
         "risk_percent": round(float(proba) * 100, 2)
