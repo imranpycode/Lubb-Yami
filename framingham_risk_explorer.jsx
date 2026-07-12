@@ -169,6 +169,8 @@ function defaultFormState() {
 /* ============================================================
    COMPONENT
    ============================================================ */
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 export default function App() {
   const [form, setForm]         = useState(defaultFormState());
   const [result, setResult]     = useState(null);
@@ -179,7 +181,7 @@ export default function App() {
 
   // Check backend health on mount
   useEffect(() => {
-    fetch("/api/health")
+    fetch(`${API_BASE}/api/health`)
       .then((r) => r.json())
       .then((d) => setBackendOk(d.model_loaded === true))
       .catch(() => setBackendOk(false));
@@ -194,7 +196,7 @@ export default function App() {
     setLoading(true);
     setApiError(null);
     try {
-      const res = await fetch("/api/predict", {
+      const res = await fetch(`${API_BASE}/api/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

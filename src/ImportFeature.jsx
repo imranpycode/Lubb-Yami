@@ -317,11 +317,13 @@ export default function ImportFeature() {
     e.target.value = "";
   };
 
-  const runPredictions = useCallback(async () => {
+  const API_BASE = import.meta.env.VITE_API_URL || "";
+
+const runPredictions = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/predict/batch", {
+      const res = await fetch(`${API_BASE}/api/predict/batch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patients }),
