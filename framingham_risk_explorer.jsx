@@ -254,7 +254,7 @@ export default function App() {
       `}</style>
 
       {/* HERO */}
-      <div style={styles.hero}>
+      <div style={styles.hero} className="explorer-hero">
         <svg viewBox="0 0 900 120" style={styles.ecgSvg} preserveAspectRatio="none">
           <polyline
             className="ecg-path"
@@ -267,7 +267,7 @@ export default function App() {
             style={{ strokeDasharray: 900, animation: "ecgDraw 2.4s ease-out forwards" }}
           />
         </svg>
-        <div style={styles.heroInner}>
+        <div style={styles.heroInner} className="explorer-hero-inner">
           <div style={styles.eyebrow}>
             <img src="/logo_lubb.png?v=1" alt="LUBB YAMI" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'contain' }} />
             <span>LUBB YAMI &middot; PREDICTION MODEL</span>
@@ -283,11 +283,11 @@ export default function App() {
 
       <div style={styles.content}>
         {!result && (
-          <form onSubmit={handleSubmit} style={styles.form}>
+          <form onSubmit={handleSubmit} style={styles.form} className="explorer-form">
             {FIELD_GROUPS.map((group) => (
-              <div key={group.title} style={styles.group}>
+              <div key={group.title} style={styles.group} className="explorer-group">
                 <h2 style={styles.groupTitle}>{group.title}</h2>
-                <div style={styles.fieldGrid}>
+                <div style={styles.fieldGrid} className="explorer-field-grid">
                   {group.fields.map((f) => (
                     <div key={f.key} style={styles.field}>
                       <label style={styles.label}>{f.label}</label>
@@ -365,8 +365,8 @@ export default function App() {
         )}
 
         {result && band && (
-          <div style={styles.resultPanel}>
-            <div style={styles.resultTop}>
+          <div style={styles.resultPanel} className="explorer-result-panel">
+            <div style={styles.resultTop} className="explorer-result-top">
               <span style={{ ...styles.bandPill, ...styles.bandColors[band.key] }}>
                 {band.label}
               </span>

@@ -1091,3 +1091,126 @@ body {
   .import-preview-actions { flex-direction: column; }
   .import-run-btn, .import-export-btn { width: 100%; justify-content: center; }
 }
+
+/* ============================================================
+   RESPONSIVENESS BREAKPOINTS FOR ALL VIEWPORTS
+   ============================================================ */
+
+/* ─── Tablets & Foldable Phones (640px to 1024px) ─── */
+@media (max-width: 1024px) {
+  .page {
+    padding: 2.5rem 1.5rem 4rem;
+  }
+}
+
+/* ─── Large/Standard Phones (375px to 480px) ─── */
+@media (max-width: 480px) {
+  .page {
+    padding: 1.5rem 1rem 3rem;
+  }
+  
+  .nav-btn {
+    padding: 8px 14px;
+    font-size: 0.825rem;
+  }
+
+  .explorer-hero {
+    padding: 30px 16px 24px !important;
+  }
+
+  .explorer-group {
+    padding: 16px 16px 18px !important;
+    border-radius: 14px !important;
+  }
+
+  .explorer-result-panel {
+    padding: 20px 18px 16px !important;
+    border-radius: 16px !important;
+  }
+  
+  .explorer-result-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .import-panel {
+    padding: 16px !important;
+  }
+  
+  .import-upload-area {
+    padding: 16px !important;
+  }
+  
+  .import-preview-area, .import-results-area {
+    padding: 16px 12px !important;
+  }
+}
+
+/* ─── Small Mobile Phones (320px to 375px) ─── */
+@media (max-width: 375px) {
+  .page {
+    padding: 1rem 0.5rem 2.5rem;
+  }
+
+  .navbar {
+    padding: 0 0.8rem !important;
+  }
+
+  .navbar-title {
+    font-size: 0.85rem !important;
+  }
+
+  .navbar-logo {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 0.775rem;
+  }
+
+  .explorer-hero {
+    padding: 24px 12px 20px !important;
+  }
+
+  .explorer-group {
+    padding: 12px 12px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .explorer-field-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .explorer-result-panel {
+    padding: 16px 12px 14px !important;
+    border-radius: 12px !important;
+  }
+  
+  .import-dropzone {
+    padding: 20px 12px !important;
+  }
+
+  .import-dropzone-main {
+    font-size: 15px !important;
+  }
+
+  .import-dropzone-sub {
+    font-size: 12px !important;
+  }
+}
+
+/* ─── Ultrawide Monitors & Large Screen TVs (min-width: 1600px) ─── */
+@media (min-width: 1600px) {
+  .page {
+    max-width: 1280px;
+    padding: 4rem 3rem 6rem;
+  }
+  
+  .navbar {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+}
+
