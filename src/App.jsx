@@ -29,7 +29,7 @@ function AboutPage() {
           <div className="heart-ring ring-3" />
           <div className="heart-ring ring-2" />
           <div className="heart-ring ring-1" />
-          <img className="heart-display" src="/logo_cropped.png?v=3" alt="LUBB YAMI" />
+          <img className="heart-display" src="/logo_lubb.png?v=1" alt="LUBB YAMI" />
         </div>
       </div>
 
@@ -255,7 +255,7 @@ export default function App() {
           onKeyDown={e => e.key === 'Enter' && setPage('prediction')}
           aria-label="Go to home"
         >
-          <img src="/logo_cropped.png?v=3" alt="LUBB YAMI Logo" className="navbar-logo" style={{ width: '48px', height: '48px', objectFit: 'contain', margin: '-8px 0' }} />
+          <img src="/logo_lubb.png?v=1" alt="LUBB YAMI Logo" className="navbar-logo" style={{ width: '48px', height: '48px', objectFit: 'contain', margin: '-8px 0' }} />
           <span className="navbar-title">LUBB YAMI</span>
         </div>
 

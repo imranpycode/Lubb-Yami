@@ -269,7 +269,7 @@ export default function App() {
         </svg>
         <div style={styles.heroInner}>
           <div style={styles.eyebrow}>
-            <img src="/logo_cropped.png?v=3" alt="LUBB YAMI" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'contain' }} />
+            <img src="/logo_lubb.png?v=1" alt="LUBB YAMI" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'contain' }} />
             <span>LUBB YAMI &middot; PREDICTION MODEL</span>
           </div>
           <h1 style={styles.h1}>Where your numbers sit</h1>
