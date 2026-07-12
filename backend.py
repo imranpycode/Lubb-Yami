@@ -98,7 +98,7 @@ def train_and_save_fallback():
         print(f"[ERR] Fallback training failed: {e}")
         print(traceback.format_exc())
 
-# Load models
+# Load and validate models
 try:
     with open(LR_MODEL_PATH, "rb") as f:
         lr_pipeline = pickle.load(f)
@@ -115,10 +115,15 @@ try:
     lr_model    = lr_pipeline.named_steps["model"]
     svm_model   = svm_pipeline.named_steps["model"]
 
-    print(f"[OK] Dual Models loaded successfully (LR + SVM).")
+    # VALIDATION STEP: Test predict_proba on the models to catch version-mismatched objects!
+    dummy_sc = scalar.transform(qt.transform(imputer_med.reshape(1, -1)))
+    lr_model.predict_proba(dummy_sc)
+    svm_model.predict_proba(dummy_sc)
+
+    print(f"[OK] Dual Models loaded and validated successfully (LR + SVM).")
 
 except Exception as e:
-    print(f"[WARN] Pickle load failed: {e}. Attempting auto-retrain...")
+    print(f"[WARN] Model validation failed: {e}. Attempting auto-retrain...")
     train_and_save_fallback()
 
 def model_ready() -> bool:
